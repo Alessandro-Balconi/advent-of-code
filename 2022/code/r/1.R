@@ -4,7 +4,7 @@ library(dplyr)
 
 # read data
 data <- read_delim(
-  file = './data/1.txt',
+  file = './2022/data/1.txt',
   delim = '\n',
   col_names = 'value',
   col_types = 'i',

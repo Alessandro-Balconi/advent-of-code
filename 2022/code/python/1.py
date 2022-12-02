@@ -4,7 +4,7 @@ import numpy as np
 
 # read data
 df = pd.read_csv(
-  './data/1.txt', 
+  './2022/data/1.txt', 
   names = ['value'],
   dtype = 'Int64',
   skip_blank_lines = False
