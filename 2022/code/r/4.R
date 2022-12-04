@@ -20,4 +20,5 @@ data |>
 
 # 2nd problem
 data |> 
-  filter((min_1 >= min_2 & min_1 <= max_2) | (min_2 >= min_1 & min_2 <= max_1))
+  filter((min_1 >= min_2 & min_1 <= max_2) | (min_2 >= min_1 & min_2 <= max_1)) |> 
+  nrow()
