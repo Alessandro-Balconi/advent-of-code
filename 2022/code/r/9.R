@@ -9,109 +9,51 @@ data <- read_delim(
   col_types = 'ci'
 )
 
-# calculate the coordinates of the head and of each node, starting from (0,0)
-data <- data |> 
-  uncount(n) |> 
-  add_row(dir = 's', .before = 1) |> 
-  mutate(
-    knot = 0,
-    step = row_number(),
-    x = cumsum((dir == "R") - (dir == "L")),
-    y = cumsum((dir == "U") - (dir == "D"))
-  )
-
-# wip ----
-
-n_knots = 3
-
+# function that iteratively moves each knot
 move_knots <- function(data, n_knots){
-  
-  knots <- tibble(
-    dir = rep(data$dir, n_knots),
-    knot = rep(seq_len(n_knots), each = length(data$dir)),
-    step = rep(seq_len(length(data$dir)), n_knots),
-    x = 0,
-    y = 0
-  ) %>%
-    bind_rows(data, .)
   
   for (k in seq_len(n_knots)){
     
-    for (i in 2:nrow(data)) {
+    head_x <- data$x[data$knot == k-1]
+    head_y <- data$y[data$knot == k-1]
+    tail_x <- tail_y <- rep(0, length(head_x))
     
-    tail_x[i] <- case_when(
-      head_x[i] - tail_x[i-1] ==  2 ~ tail_x[i-1] + 1L,
-      head_x[i] - tail_x[i-1] == -2 ~ tail_x[i-1] - 1L,
-      abs(head_y[i] - tail_y[i-1]) < 2 ~ tail_x[i-1],
-      TRUE ~ head_x[i]
-    )
-    
-    tail_y[i] <- case_when(
-      head_y[i] - tail_y[i-1] ==  2 ~ tail_y[i-1] + 1L,
-      head_y[i] - tail_y[i-1] == -2 ~ tail_y[i-1] - 1L,
-      abs(head_x[i] - tail_x[i-1]) < 2 ~ tail_y[i-1],
-      TRUE ~ head_y[i]
-    )
-    
+    for (i in 2:length(head_x)) {
+      
+      tail_x[i] <- case_when(
+        abs(head_x[i] - tail_x[i-1]) ==  2 ~ tail_x[i-1] + sign(head_x[i] - tail_x[i-1]),
+        abs(head_y[i] - tail_y[i-1]) < 2 ~ tail_x[i-1],
+        TRUE ~ head_x[i]
+      )
+      
+      tail_y[i] <- case_when(
+        abs(head_y[i] - tail_y[i-1]) ==  2 ~ tail_y[i-1] + sign(head_y[i] - tail_y[i-1]),
+        abs(head_x[i] - tail_x[i-1]) < 2 ~ tail_y[i-1],
+        TRUE ~ head_y[i]
+      )
+      
     }
     
-  }
-  
-}
-
-# part 1 solver ----
-library(tidyverse)
-
-# read data
-data <- read_delim(
-  file = './2022/data/9.txt', 
-  delim = " ",
-  col_names = c('dir', 'n'), 
-  col_types = 'ci'
-)
-
-# function to moves the tail according to head's movement
-move_tail <- function(dir, head_x, head_y){
-  
-  tail_x <- tail_y <- rep(0L, length(head_x))
-  
-  for (i in 2:length(head_x)) {
-    
-    tail_x[i] <- case_when(
-      head_x[i] - tail_x[i-1] ==  2 ~ tail_x[i-1] + 1L,
-      head_x[i] - tail_x[i-1] == -2 ~ tail_x[i-1] - 1L,
-      abs(head_y[i] - tail_y[i-1]) < 2 ~ tail_x[i-1],
-      TRUE ~ head_x[i]
-    )
-    
-    tail_y[i] <- case_when(
-      head_y[i] - tail_y[i-1] ==  2 ~ tail_y[i-1] + 1L,
-      head_y[i] - tail_y[i-1] == -2 ~ tail_y[i-1] - 1L,
-      abs(head_x[i] - tail_x[i-1]) < 2 ~ tail_y[i-1],
-      TRUE ~ head_y[i]
-    )
+    data <- tibble(knot = k, x = tail_x, y = tail_y) |> 
+      bind_rows(data)
     
   }
   
-  return(bind_cols(x = tail_x, y = tail_y))
+  return(data)
   
 }
 
-# calculate the coordinates of head and tail, starting from (0,0)
-data <- data |> 
+# 1st&2nd problem; ~12 seconds to run, how to make quicker?
+# calculate the coordinates of the head, starting from (0,0)
+data |> 
   uncount(n) |> 
   add_row(dir = 's', .before = 1) |> 
   mutate(
-    head_x = cumsum((dir == "R") - (dir == "L")),
-    head_y = cumsum((dir == "U") - (dir == "D")),
-    tail = move_tail(dir, head_x, head_y)
+    x = cumsum((dir == "R") - (dir == "L")) + 0,
+    y = cumsum((dir == "U") - (dir == "D")) + 0,
+    knot = 0
   ) |> 
-  unnest(tail, names_sep = "_")
-
-# 1st problem
-data |> 
-  distinct(tail_x, tail_y) |> 
-  nrow()
-
-# 2nd problem
-data
+  move_knots(n_knots = 9) |>
+  filter(knot %in% c(1, 9)) |> 
+  group_by(knot) |> 
+  summarise(n_distinct(x, y), .groups = 'drop')
