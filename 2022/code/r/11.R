@@ -34,10 +34,9 @@ monkey_activity <- rep(0, length(unique(data$monkey)))
 lcd <- prod(unique(data$test))
 
 # 1st and 2nd problem (just replace '%% lcd' with '/ 3' in the operation)
-# 2nd problem takes ~8 minutes to run T_T
 items <- set_names(data$starting_items, data$monkey)
 
-fnc <- function(old, info){
+update_item <- function(old, info){
   new <- eval(parse(text = paste('(', info$operation, ') %% lcd')))
   names(new) <- if_else((new %% info$test) == 0, info$if_true, info$if_false)
   return(new)
@@ -51,7 +50,7 @@ for (i in seq_len(1e4)){
     
     monkey_activity[m+1] <- monkey_activity[m+1] + length(items[names(items) == m])
     
-    items <- c(items[names(items) != m], fnc(items[names(items) == m], info))
+    items <- c(items[names(items) != m], update_item(items[names(items) == m], info))
     
   }
   
